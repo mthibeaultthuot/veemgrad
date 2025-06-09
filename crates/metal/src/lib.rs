@@ -5,8 +5,6 @@
 
 use std::ffi::CString;
 use std::os::raw::{c_char, c_float, c_void};
-use std::path::PathBuf;
-use std::time::Instant;
 
 type MatMulKernelHandle = *mut c_void;
 
@@ -100,28 +98,80 @@ impl Drop for MatMulKernel {
     }
 }
 
-#[test]
-fn test_matmul_basic() {
-    let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
-    let compiled_shader_path = out_dir.join("metal_matmul.metallib");
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+    use std::time::Duration;
+    use std::time::Instant;
 
-    let kernel = MatMulKernel::new(
-        compiled_shader_path
-            .to_str()
-            .expect("invalid metal shader path"),
-        "matmul",
-        1024,
-    )
-    .expect("Failed to create kernel");
+    #[test]
+    fn test_matmul() {
+        let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
+        let compiled_shader_path = out_dir.join("metal_matmul.metallib");
 
-    let a = vec![1.0f32, 2.0, 3.0, 4.0];
-    let b = vec![5.0f32, 6.0, 7.0, 8.0];
+        let kernel = MatMulKernel::new(
+            compiled_shader_path
+                .to_str()
+                .expect("invalid metal shader path"),
+            "matmul",
+            1024,
+        )
+        .expect("Failed to create kernel");
 
-    let start = Instant::now();
-    let result = kernel
-        .run(&a, &b, 2, 2, 2, 2)
-        .expect("Multiplication failed");
-    let end = start.elapsed();
-    println!("{:?}", end);
-    println!("{:?}", result);
+        let a = vec![
+            1.0f32, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0,
+            16.0,
+        ];
+        let b = vec![
+            17.0f32, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0,
+            31.0, 32.0,
+        ];
+
+        let start = Instant::now();
+        let result = kernel
+            .run(&a, &b, 4, 4, 4, 4)
+            .expect("Multiplication failed");
+        let end = start.elapsed();
+
+        let expect_result = vec![
+            250.0, 260.0, 270.0, 280.0, 618.0, 644.0, 670.0, 696.0, 986.0, 1028.0, 1070.0, 1112.0,
+            1354.0, 1412.0, 1470.0, 1528.0,
+        ];
+        assert_eq!(result, expect_result);
+
+        println!("{:?}", end);
+        println!("{:?}", result);
+    }
+
+    #[test]
+    fn test_matmul_benchmark() {
+        let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
+        let compiled_shader_path = out_dir.join("metal_matmul.metallib");
+
+        let kernel = MatMulKernel::new(
+            compiled_shader_path
+                .to_str()
+                .expect("invalid metal shader path"),
+            "matmul",
+            1024,
+        )
+        .expect("Failed to create kernel");
+
+        let a = vec![
+            1.0f32, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0,
+            16.0,
+        ];
+        let b = vec![
+            17.0f32, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0,
+            31.0, 32.0,
+        ];
+
+        let start = Instant::now();
+        let result = kernel
+            .run(&a, &b, 4, 4, 4, 4)
+            .expect("Multiplication failed");
+        let end = start.elapsed();
+        assert!(end < Duration::from_micros(500));
+    }
 }
