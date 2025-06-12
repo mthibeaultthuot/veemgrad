@@ -1,4 +1,4 @@
-# I just want to build a tiny deep learning framework to learn how deep learning works.
+
 
 # Current benchmark
 
