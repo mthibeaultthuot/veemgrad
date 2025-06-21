@@ -15,13 +15,18 @@ class MetalRuntime : public BackendRuntime {
   void* allocate(size_t size) override;
   void deallocate(void* ptr) override;
 
-  bool copy_to_device(void* dst, const void* src, size_t size) override;
-  bool copy_from_device(void* dst, const void* src, size_t size) override;
+  bool copy_to_device(void* dst, void* src, size_t size) override;
+  bool copy_from_device(void* dst, void* src, size_t size) override;
 
-  bool compile(const std::string& kernel_code, const std::string& kernal_name) override;
+  bool compile(const std::string& kernel_code, const std::string& kernel_name) override;
   bool run_kernel(const std::string& kernel_name, const BufferInfo* inputs, size_t num_inputs,
                   const BufferInfo* outputs, size_t num_outputs, size_t grid_dim,
                   size_t block_dim) override;
 
   void synchronize() override;
+
+ private:
+  MTL::Device* device_;
+  MTL::CommandQueue* commandQueue_;
+  MTL::ComputePipelineState* pipeline_;
 };
