@@ -4,26 +4,30 @@ GREEN='\033[0;32m'
 BLUE='\033[1;34m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-NC='\033[0m' 
+NC='\033[0m'
 
 
 BUILD_DIR="build/"
 
 DEV_MODE=false
 BUILD_MODE=false
+TEST_MODE=false
 EXECUTABLE="./backend"
 
 
 
-for arg in "$@" 
-do 
+for arg in "$@"
+do
   echo $arg
-  case $arg in 
+  case $arg in
     --dev)
       DEV_MODE=true
       ;;
     --build)
       BUILD_MODE=true;
+      ;;
+    --test)
+      TEST_MODE=true;
       ;;
   esac
 done
@@ -44,7 +48,7 @@ fi
 
 dir_exist() {
   if [ -d "$BUILD_DIR" ]
-  then 
+  then
     return 0
   fi
   return 1
@@ -77,22 +81,33 @@ build() {
   return 0
 }
 
+test() {
+  cd $BUILD_DIR
 
-if $DEV_MODE 
+  echo -e "${GREEN}🧪 Running tests...${NC}"
+  ctest --verbose
+
+  cd ..
+
+  return 0
+}
+
+
+if $DEV_MODE
 then
-  if ! dir_exist; 
-  then 
+  if ! dir_exist;
+  then
     mkdir build
     build
   fi
-  
+
   run
 fi
 
 if $BUILD_MODE
 then
   if  dir_exist;
-  then 
+  then
     rm -rf build
   fi
 
@@ -100,4 +115,15 @@ then
 
 
   build
+fi
+
+if $TEST_MODE
+then
+  if ! dir_exist;
+  then
+    mkdir build
+    build
+  fi
+
+  test
 fi

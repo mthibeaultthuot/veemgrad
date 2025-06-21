@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.16)
 project(cake)
 
+enable_testing()
+
+include(FetchContent)
+FetchContent_Declare(
+  catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG v3.4.0
+)
+FetchContent_MakeAvailable(catch2)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -13,23 +23,44 @@ include_directories(include)
 if(USE_METAL)
     message(STATUS "Building with Metal backend")
 
-  
     add_library(metal_backend STATIC
         src/backend/metal_backend.cpp
     )
 
-    target_link_libraries(metal_backend
+    target_include_directories(metal_backend PRIVATE
+        src/backend
+        src/backend/metal-cpp
+    )
+
+    target_link_libraries(metal_backend PRIVATE
         "-framework Metal"
         "-framework Foundation"
         "-framework CoreGraphics"
         "-framework QuartzCore"
     )
 
+    add_executable(metal_runtime_tests
+        tests/metal_runtime_tests.cpp
+    )
 
-    target_include_directories(metal_backend PRIVATE
+    target_include_directories(metal_runtime_tests PRIVATE
+        include
         src/backend
         src/backend/metal-cpp
+        ${catch2_SOURCE_DIR}/single_include
     )
+
+    target_link_libraries(metal_runtime_tests PRIVATE
+        metal_backend
+        Catch2::Catch2WithMain
+        "-framework Metal"
+        "-framework Foundation"
+        "-framework CoreGraphics"
+        "-framework QuartzCore"
+    )
+
+    enable_testing()
+    add_test(NAME MetalRuntimeTests COMMAND metal_runtime_tests)
 endif()
 
 if(USE_CUDA)
