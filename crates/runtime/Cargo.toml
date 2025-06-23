@@ -1,0 +1,12 @@
+[package]
+name = "runtime"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cxx = "1.0.158"
+cxx-build = "1.0.158"
+
+
+[build-dependencies]
+cxx-build = "1.0.158"

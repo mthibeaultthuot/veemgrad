@@ -2,6 +2,7 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch_all.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
@@ -23,21 +24,21 @@ TEST_CASE("D = A * B * C", "[mattul]") {
 
   float D[N * N] = {0};
 
-  void* a_ptr = runtime.allocate(SIZE);
-  void* b_ptr = runtime.allocate(SIZE);
-  void* c_ptr = runtime.allocate(SIZE);
-  void* d_ptr = runtime.allocate(SIZE);
+  uintptr_t a_ptr = runtime.allocate(SIZE);
+  uintptr_t b_ptr = runtime.allocate(SIZE);
+  uintptr_t c_ptr = runtime.allocate(SIZE);
+  uintptr_t d_ptr = runtime.allocate(SIZE);
 
-  runtime.copy_to_device(a_ptr, A, SIZE);
-  runtime.copy_to_device(b_ptr, B, SIZE);
-  runtime.copy_to_device(c_ptr, C, SIZE);
+  runtime.copy_to_device(a_ptr, reinterpret_cast<intptr_t>(A), SIZE);
+  runtime.copy_to_device(b_ptr, reinterpret_cast<intptr_t>(B), SIZE);
+  runtime.copy_to_device(c_ptr, reinterpret_cast<intptr_t>(C), SIZE);
 
   size_t shape[2] = {N, N};
 
-  BufferInfo A_buf{a_ptr, SIZE, 2, shape, nullptr, 0};
-  BufferInfo B_buf{b_ptr, SIZE, 2, shape, nullptr, 0};
-  BufferInfo C_buf{c_ptr, SIZE, 2, shape, nullptr, 0};
-  BufferInfo D_buf{d_ptr, SIZE, 2, shape, nullptr, 0};
+  RustBufferInfo A_buf{a_ptr, SIZE, 2, shape, nullptr, 0};
+  RustBufferInfo B_buf{b_ptr, SIZE, 2, shape, nullptr, 0};
+  RustBufferInfo C_buf{c_ptr, SIZE, 2, shape, nullptr, 0};
+  RustBufferInfo D_buf{d_ptr, SIZE, 2, shape, nullptr, 0};
 
   const std::string fused_kernel = R"(
       using namespace metal;
@@ -70,11 +71,17 @@ TEST_CASE("D = A * B * C", "[mattul]") {
 
   runtime.compile(fused_kernel, "matmul_fused_4x4");
 
-  BufferInfo inputs[] = {A_buf, B_buf, C_buf};
-  BufferInfo outputs[] = {D_buf};
-  runtime.run_kernel("matmul_fused_4x4", inputs, 3, outputs, 1, 16, 4);
+  RustBufferInfo inputs[] = {A_buf, B_buf, C_buf};
+  RustBufferInfo outputs[] = {D_buf};
 
-  runtime.copy_from_device(D, d_ptr, SIZE);
+  using namespace std::chrono;
+  auto start = high_resolution_clock::now();
+  runtime.run_kernel("matmul_fused_4x4", inputs, 3, outputs, 1, 16, 4);
+  auto end = high_resolution_clock::now();
+  auto duration = duration_cast<microseconds>(end - start).count();
+  std::cout << "🕒 Kernel run_kernel execution time: " << duration << " µs\n";
+
+  runtime.copy_from_device(reinterpret_cast<intptr_t>(D), d_ptr, SIZE);
 
   float temp[N * N] = {0};
   float expected[N * N] = {0};

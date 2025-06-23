@@ -1,11 +1,14 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
-struct BufferInfo {
-  void* ptr;
+// uintptr_t for CXX compatibility
+
+struct RustBufferInfo {
+  uintptr_t ptr;
   size_t size;
   size_t ndim;
   const size_t* shape;
@@ -33,8 +36,8 @@ class BackendRuntime {
   virtual bool compile(const std::string& kernel_code, const std::string& kernel_name) = 0;
 
   // Run compile kernel
-  virtual bool run_kernel(const std::string& kernel_name, const BufferInfo* inputs,
-                          size_t num_inputs, const BufferInfo* outputs, size_t num_outputs,
+  virtual bool run_kernel(const std::string& kernel_name, const RustBufferInfo* inputs,
+                          size_t num_inputs, const RustBufferInfo* outputs, size_t num_outputs,
                           size_t grid_dim, size_t block_dim) = 0;
 
   // Synchronize the kernel execution -> wait for all kernel to finish running
