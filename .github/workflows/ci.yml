@@ -1,0 +1,34 @@
+name: macOS CI (Metal Backend)
+
+on:
+  push:
+    branches: ["*"]
+  pull_request:
+    branches: ["*"]
+
+jobs:
+  metal-backend:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run dev.sh --build
+        run: |
+          cd cpp-backend
+          chmod +x dev.sh
+          ./dev.sh --build
+
+      - name: Run Metal backend tests
+        run: ./dev.sh --test
+
+      - name: Setup Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+
+      - name: Build Rust
+        run: cargo build --workspace
+
+      - name: Run Rust tests
+        run: cargo test --workspace
