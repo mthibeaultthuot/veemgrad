@@ -20,7 +20,10 @@ jobs:
           ./dev.sh --build
 
       - name: Run Metal backend tests
-        run: ./dev.sh --test
+        run: |
+          cd cpp-backend
+          chmod +x dev.sh
+          ./dev.sh --test
 
       - name: Build Rust
         run: cargo build --workspace
